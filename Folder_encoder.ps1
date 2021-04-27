@@ -1,4 +1,19 @@
-# PowerShell script : encode all files in folder using ffmpeg
+# PowerShell script : 
+
+<#
+.SYNOPSIS
+    Encode all video files in folder using ffmpeg
+.DESCRIPTION
+    Long description
+.EXAMPLE
+    Execute the script
+.INPUTS
+    *.mkv, *.mp4, *.avi, *.mov, *.webm, *.ts
+.OUTPUTS
+    Encoded video files in "encode" subfolder
+.NOTES
+    Requires : ffmpeg
+#>
 
 #========================================================================
 
@@ -17,7 +32,7 @@ function get-UserInputs {
 
     Write-Host -fore cyan  ======================== Processing FOLDER ==========================`n
 
-    return $shutdown_option, $crf, $maxrate, $codec
+    return $shutdown_option, $codec, $crf, $maxrate
 }
 
 # Check if user input is an integer
@@ -45,13 +60,14 @@ function encode_x264 {
     $filename = Split-Path -leaf $filePath
     Write-Host 'Processing' $filename `n
 
-    $CRF = $arrayParameters[1]
-    $maxrate = -join($arrayParameters[2], 'k')
-    $bufsize = -join($arrayParameters[4], 'k')
+    $CRF = $arrayParameters[$crf_index]
+    $maxrate = $arrayParameters[$maxrate_index]
+    $bufsize = $arrayParameters[$bufsize_index]
 
     # ffmpeg command
     ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx264 -tune film -preset slow -profile:v high `
-    -level:v 4.1 -crf $CRF -maxrate $maxrate -bufsize $bufsize -trellis 1 -x264-params ref=3:bframes=3:keyint=250:min-keyint=25:aq-mode=1:qcomp=0.6:no-dct-decimate=1:8x8dct=1:deblock=-1\\-1 `
+    -level:v 4.1 -crf $CRF -maxrate $maxrate -bufsize $bufsize -trellis 1 -x264-params `
+    ref=3:bframes=3:keyint=250:min-keyint=25:aq-mode=1:qcomp=0.6:no-dct-decimate=1:8x8dct=1:deblock=-1\\-1 `
      -bsf:v 'filter_units=remove_types=6' "./encode/ $filename [ENCODED x264 CRF $CRF].mkv"
 
     # Redirect errors to encoding_errors.log
@@ -74,9 +90,9 @@ function encode_x265 {
     $filename = Split-Path -leaf $filePath
     Write-Host 'Processing' $filename `n
 
-    $CRF = $arrayParameters[1]
-    $maxrate = -join($arrayParameters[2], 'k')
-    $bufsize = -join($arrayParameters[4], 'k')
+    $CRF = $arrayParameters[$crf_index]
+    $maxrate = $arrayParameters[$maxrate_index]
+    $bufsize = $arrayParameters[$bufsize_index]
 
     # ffmpeg command
     ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx265 -pix_fmt yuv420p10le `
@@ -127,7 +143,13 @@ function NormalExit {
 write-banner
 
 $arrayParameters = get-UserInputs
-# Array = $shutdown_option, $crf, $maxrate, $codec
+# Array = $shutdown_option, $codec, $crf, $maxrate
+
+$shutdown_option_index = 0
+$codec_index = 1
+$crf_index = 2
+$maxrate_index = 3
+
 
 # Check user inputs
 for ($i = 0; $i -lt $arrayParameters.Count; $i++) {
@@ -142,7 +164,7 @@ for ($i = 0; $i -lt $arrayParameters.Count; $i++) {
 
 try {
     # If codec option != 0,  1 or 2
-    if([int]$arrayParameters[3] -lt 0 -or [int]$arrayParameters[3] -gt 2){
+    if([int]$arrayParameters[$codec_index] -lt 0 -or [int]$arrayParameters[$codec_index] -gt 2){
         Write-Host -fore red 'ValueError : codec'`n 
         $storeExit = 1
     }
@@ -159,10 +181,15 @@ if ($storeExit -eq 1) {
 
 else {
     # Calculate bufsize
-    $bufsize = [int]$arrayParameters[2] * 2
+    $bufsize = [int]$arrayParameters[$maxrate_index] * 2
 
-    # Array = $shutdown_option, $crf, $maxrate, $codec, $bufsize
+    # Array = $shutdown_option, $codec, $crf, $maxrate, $bufsize
     $arrayParameters += $bufsize
+    $bufsize_index = 4
+
+    # ffmpeg bitrate formatting 
+    $arrayParameters[$maxrate_index] = -join($arrayParameters[$maxrate_index], 'k')
+    $arrayParameters[$bufsize_index] = -join($arrayParameters[$bufsize_index], 'k')    
 
 
     # Delete former log file
@@ -185,17 +212,17 @@ else {
     Get-ChildItem $directory\* -Include *.mkv, *.mp4, *.avi, *.mov, *.webm, *.ts |
     Foreach-Object {
 
-        if ([int]$arrayParameters[3] -eq 0 -or [int]$arrayParameters[3] -eq 2) {
+        if ([int]$arrayParameters[$codec_index] -eq 0 -or [int]$arrayParameters[$codec_index] -eq 2) {
             encode_x264 -filePath $_ -arrayParameters $arrayParameters
         }
-        if ([int]$arrayParameters[3] -eq 1 -or [int]$arrayParameters[3] -eq 2) {
+        if ([int]$arrayParameters[$codec_index] -eq 1 -or [int]$arrayParameters[$codec_index] -eq 2) {
             encode_x265 -filePath $_ -arrayParameters $arrayParameters
         }
         
     }
 
     # If shutdown option selected
-    if ($arrayParameters[0] -eq 1){
+    if ($arrayParameters[$shutdown_option_index] -eq 1){
         Stop-Computer
     }
 
