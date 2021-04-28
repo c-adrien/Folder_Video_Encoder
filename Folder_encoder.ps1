@@ -72,7 +72,7 @@ function encode_x264 {
 
     # Redirect errors to encoding_errors.log
     if($LASTEXITCODE -ne 0) {
-        Add-Content encoding_errors.log $filename
+        Add-Content encoding_errors.log "x264 CRF $CRF : $filename"
         Write-Host 'Failed' $filename `n  
     }
     else {
@@ -101,7 +101,7 @@ function encode_x265 {
 
     # Redirect errors to encoding_errors.log
     if($LASTEXITCODE -ne 0) {
-        Add-Content encoding_errors.log $filename
+        Add-Content encoding_errors.log "x265 CRF $CRF : $filename"
         Write-Host 'Failed' $filename `n  
     }
     else {
@@ -174,7 +174,7 @@ catch{
 }
 
 # Exit if >0 wrong input
-if ($storeExit -eq 1) {
+if ($storeExit -ne 0) {
     InputErrorExit
 }
 
