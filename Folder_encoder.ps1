@@ -3,8 +3,6 @@
 <#
 .SYNOPSIS
     Encode all video files in folder using ffmpeg
-.DESCRIPTION
-    Long description
 .EXAMPLE
     Execute the script
 .INPUTS
@@ -15,39 +13,37 @@
     Requires : ffmpeg
 #>
 
+using namespace System.Management.Automation.Host
+
 #========================================================================
 
 # Get user inputs
 function get-UserInputs {
-    Write-Host - x264 = 0
-    Write-Host - x265 = 1
-    Write-Host - Both = 2
-    $codec = Read-Host 'Select codec '
+
+    # Choice Prompt codec
+    $x264 = [ChoiceDescription]::new('x264', 'mainstream codec x264')
+    $x265 = [ChoiceDescription]::new('x265', 'for better compression')
+    $both = [ChoiceDescription]::new('Both', '')
+    $options = [ChoiceDescription[]]($x264, $x265, $both)
+    $title1 = 'Codec Selection'
+    $message1 = '=> Select your video codec'
+    $codec = $host.ui.PromptForChoice($title1, $message1, $options, 0)
+
     $crf = Read-Host 'Enter CRF value '
     $maxrate = Read-Host 'Enter maximum bitrate (kilobits) '
 
-    Write-Host - Do nothing = 0
-    Write-Host - Shutdown = 1
-    $shutdown_option= Read-Host 'Shutdown option '
+
+    # Choice Prompt shutdown option
+    $no_shutdown = [ChoiceDescription]::new('Do not shutdown', 'Do not shutdown when completed')
+    $shutdown = [ChoiceDescription]::new('Shutdown', 'Shutdown when completed')
+    $options = [ChoiceDescription[]]($no_shutdown, $shutdown)
+    $title2 = 'Shutdown option'
+    $message2 = '=> When completed...'
+    $shutdown_option = $host.ui.PromptForChoice($title2, $message2, $options, 0)
 
     Write-Host -fore cyan  ======================== Processing FOLDER ==========================`n
 
     return $shutdown_option, $codec, $crf, $maxrate
-}
-
-# Check if user input is an integer
-function checkInteger {
-    param (
-        $toCheck
-    )
-
-    try {
-        [int]$toCheck
-        return 0
-    }
-    catch {
-        return 1
-    } 
 }
 
 # x264 encoding function & error log
@@ -154,23 +150,14 @@ $maxrate_index = 3
 # Check user inputs
 for ($i = 0; $i -lt $arrayParameters.Count; $i++) {
     $storeExit = 0
-    $isCorrect = checkInteger -toCheck $arrayParameters[$i]
 
-    if($isCorrect -eq 1){
+    try {
+        [int]$arrayParameters[$i] | out-null
+    }
+    catch {
         Write-Host -fore red 'Incorrect input : ' $arrayParameters[$i]
-        $storeExit = 1
+        $storeExit++;
     }
-}
-
-try {
-    # If codec option != 0,  1 or 2
-    if([int]$arrayParameters[$codec_index] -lt 0 -or [int]$arrayParameters[$codec_index] -gt 2){
-        Write-Host -fore red 'ValueError : codec'`n 
-        $storeExit = 1
-    }
-}
-catch{
-    $storeExit = 1
 }
 
 # Exit if >0 wrong input
@@ -212,11 +199,17 @@ else {
     Get-ChildItem $directory\* -Include *.mkv, *.mp4, *.avi, *.mov, *.webm, *.ts |
     Foreach-Object {
 
-        if ([int]$arrayParameters[$codec_index] -eq 0 -or [int]$arrayParameters[$codec_index] -eq 2) {
-            encode_x264 -filePath $_ -arrayParameters $arrayParameters
-        }
-        if ([int]$arrayParameters[$codec_index] -eq 1 -or [int]$arrayParameters[$codec_index] -eq 2) {
-            encode_x265 -filePath $_ -arrayParameters $arrayParameters
+        $filepath =  $_
+
+        switch ([int]$arrayParameters[$codec_index]) {
+
+            
+            0 { encode_x264 -filePath $filepath -arrayParameters $arrayParameters }
+
+            1 { encode_x265 -filePath $filepath -arrayParameters $arrayParameters }
+
+            2 { encode_x264 -filePath $filepath -arrayParameters $arrayParameters
+                encode_x265 -filePath $filepath -arrayParameters $arrayParameters }
         }
         
     }
