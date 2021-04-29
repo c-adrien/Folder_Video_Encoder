@@ -146,13 +146,12 @@ $codec_index = 1
 $crf_index = 2
 $maxrate_index = 3
 
-
 # Check user inputs
 for ($i = 0; $i -lt $arrayParameters.Count; $i++) {
     $storeExit = 0
 
     try {
-        [int]$arrayParameters[$i] | out-null
+        $null = [int]$arrayParameters[$i]
     }
     catch {
         Write-Host -fore red 'Incorrect input : ' $arrayParameters[$i]
@@ -165,7 +164,6 @@ if ($storeExit -ne 0) {
     InputErrorExit
 }
 
-
 else {
     # Calculate bufsize
     $bufsize = [int]$arrayParameters[$maxrate_index] * 2
@@ -177,7 +175,6 @@ else {
     # ffmpeg bitrate formatting 
     $arrayParameters[$maxrate_index] = -join($arrayParameters[$maxrate_index], 'k')
     $arrayParameters[$bufsize_index] = -join($arrayParameters[$bufsize_index], 'k')    
-
 
     # Delete former log file
     $logFile = "encoding_errors.log"
@@ -202,7 +199,6 @@ else {
         $filepath =  $_
 
         switch ([int]$arrayParameters[$codec_index]) {
-
             
             0 { encode_x264 -filePath $filepath -arrayParameters $arrayParameters }
 
@@ -211,7 +207,6 @@ else {
             2 { encode_x264 -filePath $filepath -arrayParameters $arrayParameters
                 encode_x265 -filePath $filepath -arrayParameters $arrayParameters }
         }
-        
     }
 
     # If shutdown option selected
