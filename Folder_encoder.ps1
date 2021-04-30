@@ -34,11 +34,11 @@ function get-UserInputs {
 
 
     # Choice Prompt shutdown option
-    $no_shutdown = [ChoiceDescription]::new('Do not shutdown', 'Do not shutdown when completed')
-    $shutdown = [ChoiceDescription]::new('Shutdown', 'Shutdown when completed')
+    $no_shutdown = [ChoiceDescription]::new('&No', 'Do not shutdown when completed')
+    $shutdown = [ChoiceDescription]::new('&Yes', 'Shutdown when completed')
     $options = [ChoiceDescription[]]($no_shutdown, $shutdown)
     $title2 = 'Shutdown option'
-    $message2 = '=> When completed...'
+    $message2 = '=> Shutdown computer when completed ?'
     $shutdown_option = $host.ui.PromptForChoice($title2, $message2, $options, 0)
 
     Write-Host -fore cyan  ======================== Processing FOLDER ==========================`n
@@ -64,7 +64,7 @@ function encode_x264 {
     ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx264 -tune film -preset slow -profile:v high `
     -level:v 4.1 -crf $CRF -maxrate $maxrate -bufsize $bufsize -trellis 1 -x264-params `
     ref=3:bframes=3:keyint=250:min-keyint=25:aq-mode=1:qcomp=0.6:no-dct-decimate=1:8x8dct=1:deblock=-1\\-1 `
-     -bsf:v 'filter_units=remove_types=6' "./encode/ $filename [ENCODED x264 CRF $CRF].mkv"
+     -bsf:v 'filter_units=remove_types=6' "./encode/ $filename [x264 CRF $CRF].mkv"
 
     # Redirect errors to encoding_errors.log
     if($LASTEXITCODE -ne 0) {
@@ -93,7 +93,7 @@ function encode_x265 {
     # ffmpeg command
     ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx265 -pix_fmt yuv420p10le `
     -x265-params profile=main10 -level:v 4.0 -crf $CRF `
-    -maxrate $maxrate -bufsize $bufsize "./encode/ $filename [ENCODED x265 CRF $CRF].mkv"
+    -maxrate $maxrate -bufsize $bufsize "./encode/ $filename [x265 CRF $CRF].mkv"
 
     # Redirect errors to encoding_errors.log
     if($LASTEXITCODE -ne 0) {
