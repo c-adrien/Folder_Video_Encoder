@@ -46,8 +46,8 @@ function get-UserInputs {
     return $shutdown_option, $codec, $crf, $maxrate
 }
 
-# x264 encoding function & error log
-function encode_x264 {
+# encoding function & error log
+function encode {
     param (
         $filePath,
         $arrayParameters
@@ -56,52 +56,42 @@ function encode_x264 {
     $filename = Split-Path -leaf $filePath
     Write-Host 'Processing' $filename `n
 
+    $mode = [int]$arrayParameters[$codec_index]
     $CRF = $arrayParameters[$crf_index]
     $maxrate = $arrayParameters[$maxrate_index]
     $bufsize = $arrayParameters[$bufsize_index]
 
-    # ffmpeg command
-    ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx264 -tune film -preset slow -profile:v high `
-    -level:v 4.1 -crf $CRF -maxrate $maxrate -bufsize $bufsize -trellis 1 -x264-params `
-    ref=3:bframes=3:keyint=250:min-keyint=25:aq-mode=1:qcomp=0.6:no-dct-decimate=1:8x8dct=1:deblock=-1\\-1 `
-     -bsf:v 'filter_units=remove_types=6' "./encode/ $filename [x264 CRF $CRF].mkv"
+    # x264 ffmpeg command
+    if($mode -eq 0 -or $mode -eq 2){
+        ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx264 -tune film -preset slow -profile:v high `
+        -level:v 4.1 -crf $CRF -maxrate $maxrate -bufsize $bufsize -trellis 1 -x264-params `
+        ref=3:bframes=3:keyint=250:min-keyint=25:aq-mode=1:qcomp=0.6:no-dct-decimate=1:8x8dct=1:deblock=-1\\-1 `
+        -bsf:v 'filter_units=remove_types=6' "./encode/ $filename [x264 CRF $CRF].mkv"
 
-    # Redirect errors to encoding_errors.log
-    if($LASTEXITCODE -ne 0) {
-        Add-Content encoding_errors.log "x264 CRF $CRF : $filename"
-        Write-Host 'Failed' $filename `n  
+        # Redirect errors to encoding_errors.log
+        if($LASTEXITCODE -ne 0) {
+            Add-Content encoding_errors.log "x265 CRF $CRF : $filename"
+            Write-Host 'x264 [error] : Failed' $filename `n 
+        }
+        else {
+            Write-Host 'x264 [info] : Completed' $filename `n
+        }
     }
-    else {
-        Write-Host 'Completed' $filename `n
-    }
-}
 
-# x265 encoding function & error log
-function encode_x265 {
-    param (
-        $filePath,
-        $arrayParameters
-    )
+    # x265 ffmpeg command
+    if($mode -eq 1 -or $mode -eq 2){
+        ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx265 -pix_fmt yuv420p10le `
+        -x265-params profile=main10 -level:v 4.0 -crf $CRF `
+        -maxrate $maxrate -bufsize $bufsize "./encode/ $filename [x265 CRF $CRF].mkv"
 
-    $filename = Split-Path -leaf $filePath
-    Write-Host 'Processing' $filename `n
-
-    $CRF = $arrayParameters[$crf_index]
-    $maxrate = $arrayParameters[$maxrate_index]
-    $bufsize = $arrayParameters[$bufsize_index]
-
-    # ffmpeg command
-    ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx265 -pix_fmt yuv420p10le `
-    -x265-params profile=main10 -level:v 4.0 -crf $CRF `
-    -maxrate $maxrate -bufsize $bufsize "./encode/ $filename [x265 CRF $CRF].mkv"
-
-    # Redirect errors to encoding_errors.log
-    if($LASTEXITCODE -ne 0) {
-        Add-Content encoding_errors.log "x265 CRF $CRF : $filename"
-        Write-Host 'Failed' $filename `n  
-    }
-    else {
-        Write-Host 'Completed' $filename `n
+        # Redirect errors to encoding_errors.log
+        if($LASTEXITCODE -ne 0) {
+            Add-Content encoding_errors.log "x265 CRF $CRF : $filename"
+            Write-Host 'x265 [error] : Failed' $filename `n  
+        }
+        else {
+            Write-Host 'x265 [info] : Completed' $filename `n
+        }
     }
 }
 
@@ -185,7 +175,7 @@ else {
     # Output folder
     $path = "encode"
     if (!(test-path $path)) {
-        New-Item -ItemType Directory -Force -Path $path | out-null
+        $null = New-Item -ItemType Directory -Force -Path $path
     }
     
     # Get current directory
@@ -195,18 +185,7 @@ else {
     # Grab & encode all video files
     Get-ChildItem $directory\* -Include *.mkv, *.mp4, *.avi, *.mov, *.webm, *.ts |
     Foreach-Object {
-
-        $filepath =  $_
-
-        switch ([int]$arrayParameters[$codec_index]) {
-            
-            0 { encode_x264 -filePath $filepath -arrayParameters $arrayParameters }
-
-            1 { encode_x265 -filePath $filepath -arrayParameters $arrayParameters }
-
-            2 { encode_x264 -filePath $filepath -arrayParameters $arrayParameters
-                encode_x265 -filePath $filepath -arrayParameters $arrayParameters }
-        }
+        encode -filePath $_ -arrayParameters $arrayParameters
     }
 
     # If shutdown option selected
@@ -222,4 +201,3 @@ else {
         NormalExit
     }
 }
-
