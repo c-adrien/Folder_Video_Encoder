@@ -2,3 +2,4 @@
 .test/
 .encode/
 *.mkv
+*.exe

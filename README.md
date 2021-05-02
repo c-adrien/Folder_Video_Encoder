@@ -1,6 +1,13 @@
 # Folder_Video_Encoder
 
-Video encoding scripts
+Powershell video encoding script.
+
+x264 and x265 codecs available. CRF encoding mode.
+
+Ffmpeg commands to be customized.
+
+HDR not supported.
 
 ### Requirements
-[ffmpeg](https://www.ffmpeg.org)
+- Powershell >= 5.1
+- [ffmpeg](https://www.ffmpeg.org)
