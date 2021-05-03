@@ -1,6 +1,6 @@
 # Folder_Video_Encoder
 
-Powershell video encoding script.
+Powershell script to encode all video files located in a folder.
 
 x264 and x265 codecs available. CRF encoding mode.
 
