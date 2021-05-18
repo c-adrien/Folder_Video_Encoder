@@ -66,7 +66,7 @@ function encode {
         ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx264 -tune film -preset slow -profile:v high `
         -level:v 4.1 -crf $CRF -maxrate $maxrate -bufsize $bufsize -x264-params `
         ref=3:bframes=3:keyint=250:min-keyint=25:aq-mode=1:qcomp=0.6:no-dct-decimate=1:8x8dct=1:deblock=-1\\-1 `
-        -bsf:v 'filter_units=remove_types=6' "./encode/ $filename [x264 CRF $CRF].mkv"
+        -bsf:v 'filter_units=remove_types=6' "./encode/$filename [x264 CRF $CRF].mkv"
 
         # Redirect errors to encoding_errors.log
         if($LASTEXITCODE -ne 0) {
@@ -82,7 +82,7 @@ function encode {
     if($mode -eq 1 -or $mode -eq 2){
         ffmpeg -hide_banner -loglevel error -stats -n -i $filename -map 0 -c copy -c:v:0 libx265 -preset slow -pix_fmt yuv420p10le `
         -x265-params profile=main10 -level:v 4.0 -crf $CRF `
-        -maxrate $maxrate -bufsize $bufsize "./encode/ $filename [x265 CRF $CRF].mkv"
+        -maxrate $maxrate -bufsize $bufsize "./encode/$filename [x265 CRF $CRF].mkv"
 
         # Redirect errors to encoding_errors.log
         if($LASTEXITCODE -ne 0) {
