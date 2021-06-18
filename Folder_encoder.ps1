@@ -190,7 +190,7 @@ else {
 
     # If shutdown option selected
     if ($arrayParameters[$shutdown_option_index] -eq 1){
-        Stop-Computer
+        Stop-Computer -Force
     }
 
     # Exit mode
